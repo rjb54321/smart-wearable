@@ -1,0 +1,76 @@
+// This #include statement was automatically added by the Particle IDE.
+#include <Adafruit_DHT.h>
+// DHT parameters
+#define DHTPIN 5
+#define DHTTYPE DHT11
+
+// Variables
+float temperature;
+float humidity;
+int PulseSensorPurplePin = 0;    
+const int xpin=3;
+const int ypin=2;
+const int zpin=1;
+float steps=0;
+int decideflag=0;
+int Signal;     // holds the incoming raw data. Signal value can range from 0-1024
+int bpmThreshold = 550, xthreshold=-300, ythreshold=290,zthreshold=300;
+
+float sum_temp, sum_hum;
+// DHT sensor
+DHT dht(DHTPIN, DHTTYPE);
+
+void setup() {
+    // Start DHT sensor
+    dht.begin();
+}
+
+void loop() {
+
+   int bpmcount=0;
+   for(int i=0; i<6000; i++)
+  {
+   Signal = analogRead(PulseSensorPurplePin);  // Read the PulseSensor's value.
+   if(Signal > bpmThreshold)
+   {                          // If the signal is above "550", increase count;
+     bpmcount++;
+   }
+   else
+   {
+     bpmcount=bpmcount;                //  Else, the sigal must be below "550",dont increase count;
+   }
+    // Humidity measurement
+    temperature = dht.getTempCelcius();
+    // Humidity measurement
+    humidity = dht.getHumidity();
+     // Publish data
+    sum_temp=sum_temp+temperature;
+    sum_hum=sum_hum+humidity;
+
+    int zread=analogRead(zpin);
+    int yread=analogRead(ypin);
+    int xread=analogRead(xpin);
+    if (xread>=xthreshold && decideflag==0)
+    {
+      steps=steps+0.5;
+      decideflag=1;
+    }
+    else if (xread<xthreshold && decideflag==1)
+    {
+      decideflag=0;
+    }
+    else
+      decideflag=1;
+    delay(10);
+   }
+    //Find out the average temperature and humidity
+    float avg_temp=sum_temp/6000;
+    float avg_hum=sum_temp/6000;
+
+    Spark.publish("temperature", String(temperature) + " °C");
+    Spark.publish("humidity", String(humidity) + "%");
+    Spark.publish("heart rate", String(bpmcount) + "BPM");
+    Spark.publish("Steps", String(steps));
+
+
+}
